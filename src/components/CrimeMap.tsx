@@ -45,7 +45,7 @@ interface CrimeMapProps {
 
 export function CrimeMap({ showHeatmap = true, timeFilter = '7d' }: CrimeMapProps) {
   const [reports] = useState<CrimeReport[]>(() => generateMockReports(35));
-  const [mapReady, setMapReady] = useState(false);
+  
 
   const filteredReports = reports.filter(r => {
     const now = Date.now();
