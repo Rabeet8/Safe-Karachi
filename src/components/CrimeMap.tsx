@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { useState } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { CrimeReport } from '@/types/crime';
 import { CRIME_TYPES } from '@/types/crime';
@@ -37,13 +37,6 @@ function HeatmapCircles({ reports }: { reports: CrimeReport[] }) {
   );
 }
 
-function MapEvents({ onMapReady }: { onMapReady: () => void }) {
-  const map = useMap();
-  useEffect(() => {
-    onMapReady();
-  }, [map, onMapReady]);
-  return null;
-}
 
 interface CrimeMapProps {
   showHeatmap?: boolean;
@@ -52,7 +45,7 @@ interface CrimeMapProps {
 
 export function CrimeMap({ showHeatmap = true, timeFilter = '7d' }: CrimeMapProps) {
   const [reports] = useState<CrimeReport[]>(() => generateMockReports(35));
-  const [mapReady, setMapReady] = useState(false);
+  
 
   const filteredReports = reports.filter(r => {
     const now = Date.now();
@@ -79,7 +72,7 @@ export function CrimeMap({ showHeatmap = true, timeFilter = '7d' }: CrimeMapProp
           attribution='&copy; <a href="https://carto.com">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        <MapEvents onMapReady={() => setMapReady(true)} />
+        
         
         {showHeatmap && <HeatmapCircles reports={filteredReports} />}
         
