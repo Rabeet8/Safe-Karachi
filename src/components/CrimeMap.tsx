@@ -72,7 +72,7 @@ export function CrimeMap({ showHeatmap = true, timeFilter = '7d' }: CrimeMapProp
           attribution='&copy; <a href="https://carto.com">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        <MapEvents onMapReady={() => setMapReady(true)} />
+        
         
         {showHeatmap && <HeatmapCircles reports={filteredReports} />}
         
