@@ -1,21 +1,34 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, AlertTriangle, Plus, Menu, X } from 'lucide-react';
+import { Shield, AlertTriangle, MapPin, Clock, LogIn, LogOut, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { StatsBar } from '@/components/StatsBar';
 import { CrimeMap } from '@/components/CrimeMap';
 import { ReportForm } from '@/components/ReportForm';
 import { RecentReports } from '@/components/RecentReports';
 import { AreaRiskPanel } from '@/components/AreaRiskPanel';
+import { useReports } from '@/hooks/useReports';
+import { useAuth } from '@/hooks/useAuth';
+import { computeAreaRisks } from '@/lib/riskEngine';
+import type { TimeFilter } from '@/types/crime';
 
-type TimeFilter = '24h' | '7d' | '30d';
 type Tab = 'reports' | 'areas';
 
 const Index = () => {
+  const { user, profile, signOut } = useAuth();
   const [reportOpen, setReportOpen] = useState(false);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('7d');
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('reports');
+
+  const { data: reports = [], isLoading } = useReports(timeFilter);
+  const areaRisks = useMemo(() => computeAreaRisks(reports), [reports]);
+
+  const totalReports = reports.length;
+  const verifiedCount = reports.filter(r => r.status === 'verified').length;
+  const hotspots = areaRisks.filter(a => a.riskLevel === 'HIGH').length;
+  const verifiedRate = totalReports > 0 ? Math.round((verifiedCount / totalReports) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-background grid-pattern">
@@ -48,6 +61,7 @@ const Index = () => {
                 </button>
               ))}
             </div>
+            
             <Button
               onClick={() => setReportOpen(true)}
               size="sm"
@@ -56,6 +70,24 @@ const Index = () => {
               <AlertTriangle size={13} />
               Report
             </Button>
+
+            {user ? (
+              <div className="flex items-center gap-2">
+                <span className="hidden md:inline text-xs text-muted-foreground font-mono">
+                  {profile?.display_name || user.email?.split('@')[0]}
+                </span>
+                <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground">
+                  <LogOut size={15} />
+                </Button>
+              </div>
+            ) : (
+              <Link to="/auth">
+                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground font-mono text-xs">
+                  <LogIn size={14} />
+                  Login
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -63,11 +95,15 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Stats */}
-        <StatsBar />
+        <StatsBar
+          totalReports={totalReports}
+          hotspots={hotspots}
+          verifiedRate={verifiedRate}
+          loading={isLoading}
+        />
 
         {/* Map + Sidebar */}
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Map */}
           <div className="lg:col-span-2 space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
@@ -85,19 +121,16 @@ const Index = () => {
               </button>
             </div>
             <div className="h-[500px] lg:h-[560px]">
-              <CrimeMap showHeatmap={showHeatmap} timeFilter={timeFilter} />
+              <CrimeMap reports={reports} showHeatmap={showHeatmap} />
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-4">
             <div className="flex bg-secondary rounded-md p-0.5">
               <button
                 onClick={() => setActiveTab('reports')}
                 className={`flex-1 px-3 py-1.5 text-xs font-mono rounded-sm transition-all ${
-                  activeTab === 'reports'
-                    ? 'bg-card text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
+                  activeTab === 'reports' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Recent Reports
@@ -105,16 +138,18 @@ const Index = () => {
               <button
                 onClick={() => setActiveTab('areas')}
                 className={`flex-1 px-3 py-1.5 text-xs font-mono rounded-sm transition-all ${
-                  activeTab === 'areas'
-                    ? 'bg-card text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
+                  activeTab === 'areas' ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 Area Risk
               </button>
             </div>
-            <div className="max-h-[520px] overflow-y-auto pr-1 scrollbar-thin">
-              {activeTab === 'reports' ? <RecentReports /> : <AreaRiskPanel />}
+            <div className="max-h-[520px] overflow-y-auto pr-1">
+              {activeTab === 'reports' ? (
+                <RecentReports reports={reports} />
+              ) : (
+                <AreaRiskPanel risks={areaRisks} />
+              )}
             </div>
           </div>
         </div>
@@ -130,7 +165,6 @@ const Index = () => {
         </footer>
       </main>
 
-      {/* Report Form Modal */}
       <ReportForm isOpen={reportOpen} onClose={() => setReportOpen(false)} />
     </div>
   );

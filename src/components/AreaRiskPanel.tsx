@@ -1,19 +1,28 @@
 import { motion } from 'framer-motion';
-import { generateAreaRisks } from '@/data/mockData';
-import { AlertTriangle, TrendingUp, Clock } from 'lucide-react';
+import { TrendingUp, Clock } from 'lucide-react';
+import type { AreaRisk } from '@/types/crime';
 
-const risks = generateAreaRisks();
+interface AreaRiskPanelProps {
+  risks: AreaRisk[];
+}
 
-export function AreaRiskPanel() {
+export function AreaRiskPanel({ risks }: AreaRiskPanelProps) {
   const riskStyles = {
     HIGH: { border: 'border-danger/40', badge: 'bg-danger/20 text-danger', glow: 'glow-danger' },
     MEDIUM: { border: 'border-warning/40', badge: 'bg-warning/20 text-warning', glow: '' },
     LOW: { border: 'border-safe/40', badge: 'bg-safe/20 text-safe', glow: '' },
   };
 
+  const filtered = risks.filter(a => a.historicalReports > 0);
+
   return (
     <div className="space-y-3">
-      {risks.map((area, i) => {
+      {filtered.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          No area data available yet
+        </div>
+      )}
+      {filtered.map((area, i) => {
         const style = riskStyles[area.riskLevel];
         return (
           <motion.div
@@ -31,13 +40,12 @@ export function AreaRiskPanel() {
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
-                <TrendingUp size={11} /> {area.reportsLast7Days} reports
+                <TrendingUp size={11} /> {area.historicalReports} reports
               </span>
               <span className="flex items-center gap-1">
                 <Clock size={11} /> {area.peakTime}
               </span>
             </div>
-            {/* Risk bar */}
             <div className="mt-3 h-1 bg-secondary rounded-full overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
