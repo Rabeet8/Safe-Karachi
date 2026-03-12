@@ -40,7 +40,7 @@ export function computeAreaRisks(reports: Report[]): AreaRisk[] {
     );
 
     const clampedScore = Math.min(score, 100);
-    const riskLevel = clampedScore >= 50 ? 'HIGH' : clampedScore >= 25 ? 'MEDIUM' : 'LOW';
+    const riskLevel: AreaRisk['riskLevel'] = clampedScore >= 50 ? 'HIGH' : clampedScore >= 25 ? 'MEDIUM' : 'LOW';
 
     // Determine peak time from reports
     const hourCounts = new Array(24).fill(0);
