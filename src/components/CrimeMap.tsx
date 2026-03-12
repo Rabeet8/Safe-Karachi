@@ -37,13 +37,6 @@ function HeatmapCircles({ reports }: { reports: CrimeReport[] }) {
   );
 }
 
-function MapEvents({ onMapReady }: { onMapReady: () => void }) {
-  const map = useMap();
-  useEffect(() => {
-    onMapReady();
-  }, [map, onMapReady]);
-  return null;
-}
 
 interface CrimeMapProps {
   showHeatmap?: boolean;
