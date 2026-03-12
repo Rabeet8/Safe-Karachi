@@ -14,7 +14,128 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      confirmations: {
+        Row: {
+          created_at: string
+          id: string
+          report_id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          report_id: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          report_id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmations_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          last_report_date: string | null
+          phone: string | null
+          reports_today: number
+          trust_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_report_date?: string | null
+          phone?: string | null
+          reports_today?: number
+          trust_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          last_report_date?: string | null
+          phone?: string | null
+          reports_today?: number
+          trust_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reports: {
+        Row: {
+          confirmations: number
+          created_at: string
+          description: string | null
+          downvotes: number
+          expires_at: string
+          id: string
+          image_url: string | null
+          incident_type: Database["public"]["Enums"]["incident_type"]
+          latitude: number
+          location_name: string | null
+          longitude: number
+          status: Database["public"]["Enums"]["report_status"]
+          updated_at: string
+          user_id: string
+          weapon: string | null
+        }
+        Insert: {
+          confirmations?: number
+          created_at?: string
+          description?: string | null
+          downvotes?: number
+          expires_at?: string
+          id?: string
+          image_url?: string | null
+          incident_type: Database["public"]["Enums"]["incident_type"]
+          latitude: number
+          location_name?: string | null
+          longitude: number
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string
+          user_id: string
+          weapon?: string | null
+        }
+        Update: {
+          confirmations?: number
+          created_at?: string
+          description?: string | null
+          downvotes?: number
+          expires_at?: string
+          id?: string
+          image_url?: string | null
+          incident_type?: Database["public"]["Enums"]["incident_type"]
+          latitude?: number
+          location_name?: string | null
+          longitude?: number
+          status?: Database["public"]["Enums"]["report_status"]
+          updated_at?: string
+          user_id?: string
+          weapon?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +144,16 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      incident_type:
+        | "mobile_snatching"
+        | "robbery"
+        | "vehicle_theft"
+        | "street_harassment"
+        | "assault"
+        | "theft"
+        | "carjacking"
+        | "other"
+      report_status: "pending" | "verified" | "hidden" | "expired"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +280,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      incident_type: [
+        "mobile_snatching",
+        "robbery",
+        "vehicle_theft",
+        "street_harassment",
+        "assault",
+        "theft",
+        "carjacking",
+        "other",
+      ],
+      report_status: ["pending", "verified", "hidden", "expired"],
+    },
   },
 } as const
