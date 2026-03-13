@@ -9,29 +9,30 @@ interface StatCardProps {
 }
 
 function StatCard({ icon, value, label, variant = 'info' }: StatCardProps) {
-  const variantClasses = {
-    danger: 'border-danger/30 glow-danger',
-    warning: 'border-warning/30 glow-warning',
-    safe: 'border-safe/30 glow-safe',
-    info: 'border-border',
+  const styles = {
+    danger: { card: 'border-danger/20 bg-danger/5', icon: 'text-danger bg-danger/15', value: 'text-danger' },
+    warning: { card: 'border-warning/20 bg-warning/5', icon: 'text-warning bg-warning/15', value: 'text-warning' },
+    safe: { card: 'border-safe/20 bg-safe/5', icon: 'text-safe bg-safe/15', value: 'text-safe' },
+    info: { card: 'border-info/20 bg-info/5', icon: 'text-info bg-info/15', value: 'text-info' },
   };
 
-  const iconClasses = {
-    danger: 'text-danger',
-    warning: 'text-warning',
-    safe: 'text-safe',
-    info: 'text-info',
-  };
+  const s = styles[variant];
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`bg-card border rounded-md p-5 ${variantClasses[variant]}`}
+      className={`border rounded-xl p-4 ${s.card} transition-all duration-300 hover:shadow-lg`}
     >
-      <div className={`mb-3 ${iconClasses[variant]}`}>{icon}</div>
-      <div className="font-mono text-3xl font-bold text-foreground">{value}</div>
-      <div className="text-sm text-muted-foreground mt-1 uppercase tracking-wider">{label}</div>
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${s.icon}`}>
+          {icon}
+        </div>
+        <div>
+          <div className={`font-mono text-2xl font-bold ${s.value}`}>{value}</div>
+          <div className="text-[11px] text-muted-foreground uppercase tracking-wider">{label}</div>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -45,27 +46,27 @@ interface StatsBarProps {
 
 export function StatsBar({ totalReports, hotspots, verifiedRate, loading }: StatsBarProps) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <StatCard
-        icon={<AlertTriangle size={22} />}
+        icon={<AlertTriangle size={20} />}
         value={loading ? '—' : totalReports}
         label="Total Reports"
         variant="danger"
       />
       <StatCard
-        icon={<MapPin size={22} />}
+        icon={<MapPin size={20} />}
         value={loading ? '—' : hotspots}
         label="Active Hotspots"
         variant="warning"
       />
       <StatCard
-        icon={<Shield size={22} />}
+        icon={<Shield size={20} />}
         value={loading ? '—' : `${verifiedRate}%`}
         label="Verified Rate"
         variant="safe"
       />
       <StatCard
-        icon={<Clock size={22} />}
+        icon={<Clock size={20} />}
         value="48h"
         label="Report Expiry"
         variant="info"
