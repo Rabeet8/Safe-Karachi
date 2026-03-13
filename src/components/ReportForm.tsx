@@ -15,7 +15,7 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
   const { user } = useAuth();
   const createReport = useCreateReport();
   const uploadEvidence = useUploadEvidence();
-  
+
   const [selectedType, setSelectedType] = useState<IncidentType | ''>('');
   const [locationName, setLocationName] = useState('');
   const [description, setDescription] = useState('');
@@ -33,7 +33,6 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
         setGettingLocation(false);
       },
       () => {
-        // Default to Karachi center if denied
         setCoords({ lat: 24.8607, lng: 67.0011 });
         setGettingLocation(false);
       },
@@ -64,7 +63,6 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
       image_url: imageUrl,
     });
 
-    // Reset form
     setSelectedType('');
     setLocationName('');
     setDescription('');
@@ -82,14 +80,14 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md"
             onClick={onClose}
           >
             <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-card border border-border rounded-md p-8 text-center max-w-sm"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card border border-border rounded-xl p-8 text-center max-w-sm shadow-2xl shadow-black/50"
               onClick={e => e.stopPropagation()}
             >
               <div className="text-4xl mb-3">🔒</div>
@@ -109,26 +107,30 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-background/80 backdrop-blur-md"
           onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            className="bg-card border border-border rounded-md w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="bg-card border border-border rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl shadow-black/60"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h3 className="font-mono text-sm uppercase tracking-wider text-foreground">Report Incident</h3>
-              <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
-                <X size={18} />
+            <div className="flex items-center justify-between p-5 border-b border-border">
+              <div>
+                <h3 className="font-semibold text-foreground text-base">Report Incident</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Help keep Karachi safe</p>
+              </div>
+              <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors w-8 h-8 rounded-lg hover:bg-secondary flex items-center justify-center">
+                <X size={16} />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+            <form onSubmit={handleSubmit} className="p-5 space-y-5">
               <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">
+                <label className="block text-xs font-medium text-muted-foreground mb-2.5 uppercase tracking-wider">
                   Incident Type *
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -137,29 +139,29 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
                       key={key}
                       type="button"
                       onClick={() => setSelectedType(key)}
-                      className={`p-2.5 rounded-md border text-left text-sm flex items-center gap-2 transition-all ${
+                      className={`p-3 rounded-lg border text-left text-sm flex items-center gap-2.5 transition-all duration-200 ${
                         selectedType === key
-                          ? 'border-danger bg-danger/10 text-foreground'
-                          : 'border-border bg-secondary text-muted-foreground hover:border-muted-foreground'
+                          ? 'border-danger/50 bg-danger/10 text-foreground shadow-sm'
+                          : 'border-border bg-secondary/50 text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground'
                       }`}
                     >
-                      <span>{val.icon}</span>
-                      <span>{val.label}</span>
+                      <span className="text-base">{val.icon}</span>
+                      <span className="text-xs font-medium">{val.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">
-                  <MapPin size={12} className="inline mr-1" /> Location *
+                <label className="block text-xs font-medium text-muted-foreground mb-2.5 uppercase tracking-wider">
+                  <MapPin size={11} className="inline mr-1 -mt-0.5" /> Location *
                 </label>
                 {!coords ? (
-                  <Button type="button" variant="outline" size="sm" onClick={getLocation} disabled={gettingLocation}>
-                    {gettingLocation ? <><Loader2 size={14} className="animate-spin mr-1" /> Getting location...</> : 'Use My Location'}
+                  <Button type="button" variant="outline" size="sm" onClick={getLocation} disabled={gettingLocation} className="rounded-lg">
+                    {gettingLocation ? <><Loader2 size={14} className="animate-spin mr-1.5" /> Getting location...</> : '📍 Use My Location'}
                   </Button>
                 ) : (
-                  <div className="text-xs text-safe font-mono">
+                  <div className="text-xs text-safe font-mono bg-safe/10 border border-safe/20 rounded-lg px-3 py-2 inline-block">
                     ✓ Location set ({coords.lat.toFixed(4)}, {coords.lng.toFixed(4)})
                   </div>
                 )}
@@ -169,18 +171,18 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
                   onChange={e => setLocationName(e.target.value)}
                   placeholder="Area name (e.g., Tariq Road near Chase Up)"
                   maxLength={200}
-                  className="w-full mt-2 bg-secondary border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-muted-foreground"
+                  className="w-full mt-2 bg-secondary/50 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring/50 transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">
+                <label className="block text-xs font-medium text-muted-foreground mb-2.5 uppercase tracking-wider">
                   Weapon Used
                 </label>
                 <select
                   value={weapon}
                   onChange={e => setWeapon(e.target.value)}
-                  className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:border-muted-foreground"
+                  className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring/50 transition-all"
                 >
                   <option value="">None</option>
                   <option value="Gun">Gun</option>
@@ -190,7 +192,7 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
               </div>
 
               <div>
-                <label className="block text-xs font-mono uppercase tracking-wider text-muted-foreground mb-2">
+                <label className="block text-xs font-medium text-muted-foreground mb-2.5 uppercase tracking-wider">
                   Description
                 </label>
                 <textarea
@@ -199,11 +201,11 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
                   placeholder="Describe the incident..."
                   rows={3}
                   maxLength={1000}
-                  className="w-full bg-secondary border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-muted-foreground resize-none"
+                  className="w-full bg-secondary/50 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring/50 transition-all resize-none"
                 />
               </div>
 
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center gap-3 pt-1">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -215,17 +217,17 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="gap-1.5"
+                  className="gap-1.5 rounded-lg"
                   onClick={() => fileInputRef.current?.click()}
                 >
                   <Camera size={14} />
-                  {imageFile ? imageFile.name.slice(0, 20) : 'Add Evidence'}
+                  {imageFile ? imageFile.name.slice(0, 18) : 'Add Evidence'}
                 </Button>
                 <div className="flex-1" />
                 <Button
                   type="submit"
                   size="sm"
-                  className="gap-1.5 bg-danger hover:bg-danger/90 text-danger-foreground"
+                  className="gap-1.5 bg-danger hover:bg-danger/90 text-danger-foreground rounded-lg shadow-lg shadow-danger/20 px-5"
                   disabled={!selectedType || !coords || createReport.isPending}
                 >
                   {createReport.isPending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}

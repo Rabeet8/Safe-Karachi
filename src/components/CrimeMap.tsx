@@ -25,7 +25,7 @@ function HeatmapCircles({ reports }: { reports: Report[] }) {
           radius={Math.min(point.count * 12, 50)}
           pathOptions={{
             fillColor: point.count > 3 ? '#e63946' : point.count > 1 ? '#f4a261' : '#2a9d8f',
-            fillOpacity: 0.15,
+            fillOpacity: 0.12,
             stroke: false,
           }}
         />
@@ -47,7 +47,7 @@ export function CrimeMap({ reports, showHeatmap = true }: CrimeMapProps) {
   };
 
   return (
-    <div className="relative w-full h-full rounded-md overflow-hidden border border-border">
+    <div className="relative w-full h-full rounded-xl overflow-hidden border border-border shadow-lg shadow-black/30">
       <MapContainer
         center={KARACHI_CENTER}
         zoom={12}
@@ -58,9 +58,9 @@ export function CrimeMap({ reports, showHeatmap = true }: CrimeMapProps) {
           attribution='&copy; <a href="https://carto.com">CARTO</a>'
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
-        
+
         {showHeatmap && <HeatmapCircles reports={reports} />}
-        
+
         {reports.map(report => (
           <CircleMarker
             key={report.id}
@@ -71,7 +71,7 @@ export function CrimeMap({ reports, showHeatmap = true }: CrimeMapProps) {
               fillOpacity: 0.9,
               color: getMarkerColor(report.incident_type),
               weight: 2,
-              opacity: 0.7,
+              opacity: 0.6,
             }}
           >
             <Popup>
@@ -84,7 +84,7 @@ export function CrimeMap({ reports, showHeatmap = true }: CrimeMapProps) {
                 <div className="flex flex-col gap-1 text-xs opacity-70">
                   {report.location_name && <span>📍 {report.location_name}</span>}
                   <span>🕐 {formatDistanceToNow(new Date(report.created_at), { addSuffix: true })}</span>
-                  {report.weapon && <span>🔫 Weapon: {report.weapon}</span>}
+                  {report.weapon && <span>⚠️ Weapon: {report.weapon}</span>}
                   <span>{report.status === 'verified' ? '✅ Verified' : `👥 ${report.confirmations}/3 confirmations`}</span>
                 </div>
               </div>
@@ -92,21 +92,21 @@ export function CrimeMap({ reports, showHeatmap = true }: CrimeMapProps) {
           </CircleMarker>
         ))}
       </MapContainer>
-      
-      <div className="absolute bottom-4 left-4 bg-card/90 backdrop-blur-sm border border-border rounded-md p-3 z-[1000]">
-        <div className="text-xs font-mono text-muted-foreground mb-2 uppercase tracking-wider">Risk Level</div>
+
+      <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-md border border-border rounded-lg p-3 z-10 shadow-lg">
+        <div className="text-[10px] font-mono text-muted-foreground mb-2 uppercase tracking-widest">Legend</div>
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-danger" />
-            <span className="text-xs text-foreground">High Risk</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-danger" />
+            <span className="text-[11px] text-foreground">High Risk</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-warning" />
-            <span className="text-xs text-foreground">Medium Risk</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-warning" />
+            <span className="text-[11px] text-foreground">Medium Risk</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-safe" />
-            <span className="text-xs text-foreground">Low Risk</span>
+            <div className="w-2.5 h-2.5 rounded-full bg-safe" />
+            <span className="text-[11px] text-foreground">Low Risk</span>
           </div>
         </div>
       </div>
