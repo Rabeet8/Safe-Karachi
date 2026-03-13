@@ -1,6 +1,6 @@
 import type { Report, AreaRisk } from '@/types/crime';
 
-const KARACHI_AREAS = [
+export const KARACHI_AREAS = [
   { name: 'Saddar', lat: 24.8607, lng: 67.0100 },
   { name: 'Tariq Road', lat: 24.8700, lng: 67.0650 },
   { name: 'Clifton', lat: 24.8138, lng: 67.0300 },
@@ -41,6 +41,7 @@ export function computeAreaRisks(reports: Report[]): AreaRisk[] {
 
     const clampedScore = Math.min(score, 100);
     const riskLevel: AreaRisk['riskLevel'] = clampedScore >= 50 ? 'HIGH' : clampedScore >= 25 ? 'MEDIUM' : 'LOW';
+    const finalScore = clampedScore;
 
     // Determine peak time from reports
     const hourCounts = new Array(24).fill(0);
@@ -58,13 +59,28 @@ export function computeAreaRisks(reports: Report[]): AreaRisk[] {
       lat: area.lat,
       lng: area.lng,
       riskLevel,
-      score: clampedScore,
+      score: finalScore,
       recentReports,
       confirmedReports,
       historicalReports,
       peakTime,
     };
   }).sort((a, b) => b.score - a.score);
+}
+
+export function getNearestArea(lat: number, lng: number): string {
+  let minDistance = Infinity;
+  let nearestArea = 'Unknown';
+
+  KARACHI_AREAS.forEach(area => {
+    const dist = getDistance(lat, lng, area.lat, area.lng);
+    if (dist < minDistance) {
+      minDistance = dist;
+      nearestArea = area.name;
+    }
+  });
+
+  return nearestArea;
 }
 
 export function getProximityValid(userLat: number, userLng: number, reportLat: number, reportLng: number): boolean {

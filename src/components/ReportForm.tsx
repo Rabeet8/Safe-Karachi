@@ -1,10 +1,57 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, MapPin, Camera, Loader2 } from 'lucide-react';
+import { X, Send, MapPin, Camera, Loader2, CheckCircle, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { INCIDENT_CONFIG, type IncidentType } from '@/types/crime';
 import { useCreateReport, useUploadEvidence } from '@/hooks/useReports';
 import { useAuth } from '@/hooks/useAuth';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default Leaflet marker icon
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+L.Marker.prototype.options.icon = DefaultIcon;
+
+function MapRecenter({ position }: { position: { lat: number, lng: number } | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (position) map.setView([position.lat, position.lng], 15);
+  }, [position, map]);
+  return null;
+}
+
+function LocationMarker({ position, setPosition }: { position: { lat: number, lng: number } | null, setPosition: (p: { lat: number, lng: number }) => void }) {
+  const map = useMapEvents({
+    click(e) {
+      setPosition({ lat: e.latlng.lat, lng: e.latlng.lng });
+    },
+  });
+
+  return position === null ? null : (
+    <Marker 
+      position={[position.lat, position.lng]} 
+      draggable={true}
+      eventHandlers={{
+        dragend: (e) => {
+          const marker = e.target;
+          const pos = marker.getLatLng();
+          setPosition({ lat: pos.lat, lng: pos.lng });
+        },
+      }}
+    />
+  );
+}
+
+import { toast } from 'sonner';
 
 interface ReportFormProps {
   isOpen: boolean;
@@ -31,45 +78,68 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
       pos => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGettingLocation(false);
+        toast.success("Current location captured");
       },
       () => {
         setCoords({ lat: 24.8607, lng: 67.0011 });
         setGettingLocation(false);
+        toast.info("Using default Karachi coordinates (Location denied)");
       },
       { enableHighAccuracy: true }
     );
   };
 
+  const handleLocationSearch = async (query: string) => {
+    if (query.length < 3) return;
+    try {
+      const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Karachi')}&limit=1`);
+      const data = await resp.json();
+      if (data && data[0]) {
+        setCoords({ lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
+      }
+    } catch (e) {
+      console.error("Search failed", e);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedType || !coords) return;
+    if (!selectedType || !coords) {
+      toast.error("Please select incident type and location");
+      return;
+    }
 
     let imageUrl: string | undefined;
     if (imageFile) {
       try {
         imageUrl = await uploadEvidence.mutateAsync(imageFile);
-      } catch {
+      } catch (err: any) {
+        toast.error("Failed to upload image: " + (err.message || "Unknown error"));
         return;
       }
     }
 
-    await createReport.mutateAsync({
-      incident_type: selectedType,
-      latitude: coords.lat,
-      longitude: coords.lng,
-      location_name: locationName || undefined,
-      description: description || undefined,
-      weapon: weapon || undefined,
-      image_url: imageUrl,
-    });
+    try {
+      await createReport.mutateAsync({
+        incident_type: selectedType,
+        latitude: coords.lat,
+        longitude: coords.lng,
+        location_name: locationName || undefined,
+        description: description || undefined,
+        weapon: weapon || undefined,
+        image_url: imageUrl,
+      });
 
-    setSelectedType('');
-    setLocationName('');
-    setDescription('');
-    setWeapon('');
-    setImageFile(null);
-    setCoords(null);
-    onClose();
+      setSelectedType('');
+      setLocationName('');
+      setDescription('');
+      setWeapon('');
+      setImageFile(null);
+      setCoords(null);
+      onClose();
+    } catch (err: any) {
+      toast.error("Failed to submit report: " + (err.message || "Unknown error"));
+    }
   };
 
   if (!user) {
@@ -153,26 +223,79 @@ export function ReportForm({ isOpen, onClose }: ReportFormProps) {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-2.5 uppercase tracking-wider">
-                  <MapPin size={11} className="inline mr-1 -mt-0.5" /> Location *
+                <label className="block text-xs font-medium text-muted-foreground mb-2.5 uppercase tracking-wider flex items-center justify-between">
+                  <span><MapPin size={11} className="inline mr-1 -mt-0.5" /> Incident Location *</span>
+                  {coords && (
+                    <span className="text-[10px] text-safe font-mono animate-pulse">✓ LOCATION_LOCKED</span>
+                  )}
                 </label>
-                {!coords ? (
-                  <Button type="button" variant="outline" size="sm" onClick={getLocation} disabled={gettingLocation} className="rounded-lg">
-                    {gettingLocation ? <><Loader2 size={14} className="animate-spin mr-1.5" /> Getting location...</> : '📍 Use My Location'}
+                
+                <div className="flex gap-2 mb-3">
+                  <Button 
+                    type="button" 
+                    variant={gettingLocation ? "secondary" : "outline"} 
+                    size="sm" 
+                    onClick={getLocation} 
+                    disabled={gettingLocation} 
+                    className="flex-1 rounded-lg h-10 gap-2 border-border/50"
+                  >
+                    {gettingLocation ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
+                    {gettingLocation ? 'GPS_LOCATING...' : 'Use My GPS'}
                   </Button>
-                ) : (
-                  <div className="text-xs text-safe font-mono bg-safe/10 border border-safe/20 rounded-lg px-3 py-2 inline-block">
-                    ✓ Location set ({coords.lat.toFixed(4)}, {coords.lng.toFixed(4)})
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+                      <input
+                        type="text"
+                        value={locationName}
+                        onChange={e => setLocationName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleLocationSearch(locationName))}
+                        placeholder="Search area (e.g. Rafah-e-Aam, North Nazimabad)"
+                        className="w-full bg-secondary/50 border border-border rounded-lg pl-9 pr-3 py-2.5 text-sm text-foreground focus:outline-none focus:border-danger/50 font-mono"
+                      />
+                    </div>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => handleLocationSearch(locationName)}
+                      className="h-[42px] px-4"
+                    >
+                      Search
+                    </Button>
                   </div>
-                )}
-                <input
-                  type="text"
-                  value={locationName}
-                  onChange={e => setLocationName(e.target.value)}
-                  placeholder="Area name (e.g., Tariq Road near Chase Up)"
-                  maxLength={200}
-                  className="w-full mt-2 bg-secondary/50 border border-border rounded-lg px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring/50 transition-all"
-                />
+
+                  <div className="h-[200px] w-full rounded-xl overflow-hidden border border-border relative group">
+                    <MapContainer
+                      center={coords || [24.8607, 67.0011]}
+                      zoom={13}
+                      className="h-full w-full"
+                    >
+                      <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+                      <LocationMarker position={coords} setPosition={setCoords} />
+                      <MapRecenter position={coords} />
+                    </MapContainer>
+                    <div className="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-sm p-1.5 rounded-lg text-[10px] text-white/80 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                      Click or drag marker to fine-tune location
+                    </div>
+                  </div>
+
+                  {coords && (
+                    <div className="p-3 rounded-lg bg-secondary/30 border border-border/50 flex items-center justify-between">
+                      <div className="text-[10px] font-mono text-muted-foreground flex flex-col gap-0.5">
+                        <span className="text-safe lowercase">✓ coordinate_ready</span>
+                        <span>LAT: {coords.lat.toFixed(6)}</span>
+                        <span>LNG: {coords.lng.toFixed(6)}</span>
+                      </div>
+                      <div className="w-8 h-8 rounded bg-safe/10 border border-safe/20 flex items-center justify-center text-safe">
+                        <CheckCircle size={14} />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>

@@ -7,9 +7,11 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface RecentReportsProps {
   reports: Report[];
+  selectedId?: string | null;
+  onReportSelect?: (id: string) => void;
 }
 
-export function RecentReports({ reports }: RecentReportsProps) {
+export function RecentReports({ reports, selectedId, onReportSelect }: RecentReportsProps) {
   const vote = useVoteReport();
   const { user } = useAuth();
 
@@ -31,7 +33,11 @@ export function RecentReports({ reports }: RecentReportsProps) {
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: i * 0.03 }}
-          className="bg-card border border-border rounded-lg p-4 hover:border-muted-foreground/20 transition-all duration-200 group"
+          onClick={() => onReportSelect?.(report.id)}
+          className={`bg-card border rounded-lg p-4 transition-all duration-200 group cursor-pointer ${selectedId === report.id
+              ? 'border-danger shadow-sm shadow-danger/10 ring-1 ring-danger/20'
+              : 'border-border hover:border-muted-foreground/20'
+            }`}
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
@@ -59,7 +65,36 @@ export function RecentReports({ reports }: RecentReportsProps) {
             )}
           </div>
           {report.description && (
-            <p className="text-xs text-muted-foreground mt-2.5 leading-relaxed pl-11">{report.description}</p>
+            <div className="flex gap-3 mt-2.5 pl-11">
+              <p className="text-xs text-muted-foreground leading-relaxed flex-1">{report.description}</p>
+              {report.image_url && (
+                <a 
+                  href={report.image_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex-shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="w-12 h-12 rounded-lg border border-border overflow-hidden bg-secondary hover:border-danger/50 transition-colors">
+                    <img src={report.image_url} alt="Evidence" className="w-full h-full object-cover" />
+                  </div>
+                </a>
+              )}
+            </div>
+          )}
+          {!report.description && report.image_url && (
+            <div className="mt-2.5 pl-11">
+              <a 
+                href={report.image_url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="w-12 h-12 rounded-lg border border-border overflow-hidden bg-secondary hover:border-danger/50 transition-colors">
+                  <img src={report.image_url} alt="Evidence" className="w-full h-full object-cover" />
+                </div>
+              </a>
+            </div>
           )}
           {user && (
             <div className="flex items-center gap-3 mt-3 pl-11 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

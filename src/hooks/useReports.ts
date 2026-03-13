@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import type { TimeFilter, IncidentType } from '@/types/crime';
+import type { TimeFilter, IncidentType, Report } from '@/types/crime';
 import { toast } from 'sonner';
 
 export function useReports(timeFilter: TimeFilter) {
@@ -16,12 +16,27 @@ export function useReports(timeFilter: TimeFilter) {
         .select('*')
         .gte('created_at', since)
         .neq('status', 'hidden')
-        .neq('status', 'expired')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return data as Report[];
     },
     refetchInterval: 30000,
+  });
+}
+
+export function useAllReports() {
+  return useQuery({
+    queryKey: ['all-reports'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .neq('status', 'hidden')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as Report[];
+    },
+    refetchInterval: 60000,
   });
 }
 
@@ -89,11 +104,35 @@ export function useUploadEvidence() {
   return useMutation({
     mutationFn: async (file: File) => {
       const ext = file.name.split('.').pop();
-      const path = `${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from('evidence').upload(path, file);
+      const fileName = `${Math.random().toString(36).slice(2, 11)}_${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from('evidence').upload(fileName, file);
       if (error) throw error;
-      const { data } = supabase.storage.from('evidence').getPublicUrl(path);
+      const { data } = supabase.storage.from('evidence').getPublicUrl(fileName);
       return data.publicUrl;
+    },
+  });
+}
+
+export function useUpdateReportStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ reportId, status }: { reportId: string; status: 'verified' | 'hidden' }) => {
+      const { data, error } = await supabase
+        .from('reports')
+        .update({ status })
+        .eq('id', reportId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reports'] });
+      toast.success('Report updated successfully');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
 }

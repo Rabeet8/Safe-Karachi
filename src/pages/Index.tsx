@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Shield, AlertTriangle, MapPin, LogIn, LogOut, Menu, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Shield, AlertTriangle, MapPin, LogIn, LogOut, Menu, X, BarChart3, History } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { StatsBar } from '@/components/StatsBar';
@@ -8,10 +8,12 @@ import { CrimeMap } from '@/components/CrimeMap';
 import { ReportForm } from '@/components/ReportForm';
 import { RecentReports } from '@/components/RecentReports';
 import { AreaRiskPanel } from '@/components/AreaRiskPanel';
-import { useReports } from '@/hooks/useReports';
+import { useReports, useAllReports } from '@/hooks/useReports';
 import { useAuth } from '@/hooks/useAuth';
 import { computeAreaRisks } from '@/lib/riskEngine';
-import type { TimeFilter } from '@/types/crime';
+import { HistoricalTable } from '@/components/HistoricalTable';
+import { ReplayTimeline } from '@/components/ReplayTimeline';
+import type { TimeFilter, AreaRisk, Report } from '@/types/crime';
 
 type Tab = 'reports' | 'areas';
 
@@ -19,17 +21,34 @@ const Index = () => {
   const { user, profile, signOut } = useAuth();
   const [reportOpen, setReportOpen] = useState(false);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('7d');
-  const [showHeatmap, setShowHeatmap] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>('reports');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [selectedArea, setSelectedArea] = useState<AreaRisk | null>(null);
 
   const { data: reports = [], isLoading } = useReports(timeFilter);
+  const { data: allReports = [] } = useAllReports();
   const areaRisks = useMemo(() => computeAreaRisks(reports), [reports]);
 
-  const totalReports = reports.length;
-  const verifiedCount = reports.filter(r => r.status === 'verified').length;
+  const [replayOpen, setReplayOpen] = useState(false);
+  const [replayReports, setReplayReports] = useState<Report[]>([]);
+  const [newestReportId, setNewestReportId] = useState<string | null>(null);
+
+  const totalReports = allReports.length;
   const hotspots = areaRisks.filter(a => a.riskLevel === 'HIGH').length;
-  const verifiedRate = totalReports > 0 ? Math.round((verifiedCount / totalReports) * 100) : 0;
+
+  const handleTimelineUpdate = (currentTime: Date, visible: Report[]) => {
+    setReplayReports(visible);
+    // Find if a new report just appeared
+    if (visible.length > 0) {
+      const latest = visible[visible.length - 1];
+      if (latest.id !== newestReportId) {
+        setNewestReportId(latest.id);
+      }
+    } else {
+      setNewestReportId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background noise-bg">
@@ -53,16 +72,30 @@ const Index = () => {
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-3">
+            <Link to="/analytics">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground font-mono text-xs">
+                <BarChart3 size={14} />
+                Analytics
+              </Button>
+            </Link>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setReplayOpen(!replayOpen)}
+              className={`gap-1.5 font-mono text-xs transition-colors ${replayOpen ? 'text-danger bg-danger/10' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <History size={14} />
+              Replay
+            </Button>
             <div className="flex items-center gap-0.5 bg-secondary/80 rounded-lg p-1">
               {(['24h', '7d', '30d'] as TimeFilter[]).map(f => (
                 <button
                   key={f}
                   onClick={() => setTimeFilter(f)}
-                  className={`px-3.5 py-1.5 text-xs font-mono rounded-md transition-all duration-200 ${
-                    timeFilter === f
+                  className={`px-3.5 py-1.5 text-xs font-mono rounded-md transition-all duration-200 ${timeFilter === f
                       ? 'bg-card text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                 >
                   {f}
                 </button>
@@ -118,15 +151,20 @@ const Index = () => {
                 <button
                   key={f}
                   onClick={() => setTimeFilter(f)}
-                  className={`px-3 py-1.5 text-xs font-mono rounded-md transition-all ${
-                    timeFilter === f ? 'bg-card text-foreground' : 'text-muted-foreground'
-                  }`}
+                  className={`px-3 py-1.5 text-xs font-mono rounded-md transition-all ${timeFilter === f ? 'bg-card text-foreground' : 'text-muted-foreground'
+                    }`}
                 >
                   {f}
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2">
+              <Link to="/analytics" className="w-full">
+                <Button variant="ghost" size="sm" className="w-full justify-start gap-1.5 text-muted-foreground font-mono text-xs">
+                  <BarChart3 size={14} /> Analytics
+                </Button>
+              </Link>
+              <div className="flex items-center gap-2">
               <Button onClick={() => { setReportOpen(true); setMobileMenuOpen(false); }} size="sm" className="bg-danger hover:bg-danger/90 text-danger-foreground font-mono text-xs rounded-lg">
                 <AlertTriangle size={13} className="mr-1.5" /> Report
               </Button>
@@ -142,6 +180,7 @@ const Index = () => {
                 </Link>
               )}
             </div>
+            </div>
           </motion.div>
         )}
       </header>
@@ -151,7 +190,6 @@ const Index = () => {
         <StatsBar
           totalReports={totalReports}
           hotspots={hotspots}
-          verifiedRate={verifiedRate}
           loading={isLoading}
         />
 
@@ -166,19 +204,25 @@ const Index = () => {
                   Live Crime Map
                 </h2>
               </div>
-              <button
-                onClick={() => setShowHeatmap(!showHeatmap)}
-                className={`text-xs font-mono px-3 py-1.5 rounded-lg border transition-all duration-200 ${
-                  showHeatmap
-                    ? 'border-danger/30 text-danger bg-danger/10'
-                    : 'border-border text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {showHeatmap ? '🔥 Heatmap ON' : '🔥 Heatmap OFF'}
-              </button>
             </div>
             <div className="h-[480px] lg:h-[580px] relative z-0">
-              <CrimeMap reports={reports} showHeatmap={showHeatmap} />
+              <CrimeMap 
+                reports={replayOpen ? replayReports : reports} 
+                areaRisks={areaRisks}
+                selectedReportId={selectedReportId}
+                selectedArea={selectedArea}
+                replayActive={replayOpen}
+                newestReportId={newestReportId}
+              />
+              <AnimatePresence>
+                {replayOpen && (
+                  <ReplayTimeline 
+                    reports={reports} 
+                    onTimeUpdate={handleTimelineUpdate} 
+                    onClose={() => setReplayOpen(false)}
+                  />
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
@@ -187,30 +231,54 @@ const Index = () => {
             <div className="flex bg-secondary/60 rounded-lg p-1">
               <button
                 onClick={() => setActiveTab('reports')}
-                className={`flex-1 px-3 py-2 text-xs font-mono rounded-md transition-all duration-200 ${
-                  activeTab === 'reports' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`flex-1 px-3 py-2 text-xs font-mono rounded-md transition-all duration-200 ${activeTab === 'reports' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 Recent Reports
               </button>
               <button
                 onClick={() => setActiveTab('areas')}
-                className={`flex-1 px-3 py-2 text-xs font-mono rounded-md transition-all duration-200 ${
-                  activeTab === 'areas' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className={`flex-1 px-3 py-2 text-xs font-mono rounded-md transition-all duration-200 ${activeTab === 'areas' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
               >
                 Area Risk
               </button>
             </div>
             <div className="max-h-[540px] overflow-y-auto pr-0.5">
               {activeTab === 'reports' ? (
-                <RecentReports reports={reports} />
+                <RecentReports 
+                  reports={replayOpen ? [...replayReports].reverse() : reports} 
+                  selectedId={selectedReportId}
+                  onReportSelect={(id) => {
+                    setSelectedReportId(id);
+                    setSelectedArea(null);
+                  }}
+                />
               ) : (
-                <AreaRiskPanel risks={areaRisks} />
+                <AreaRiskPanel 
+                  risks={areaRisks} 
+                  selectedAreaName={selectedArea?.name || null}
+                  onAreaSelect={(area) => {
+                    setSelectedArea(area);
+                    setSelectedReportId(null);
+                  }}
+                />
               )}
             </div>
           </div>
         </div>
+
+        {/* Historical Table Section */}
+        <section className="space-y-4 pt-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-px bg-border" />
+            <h2 className="font-mono text-xs uppercase tracking-[0.3em] text-muted-foreground whitespace-nowrap">
+              Historical Records Database
+            </h2>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+          <HistoricalTable />
+        </section>
 
         {/* Footer */}
         <footer className="border-t border-border pt-8 pb-10">
@@ -222,7 +290,7 @@ const Index = () => {
               </span>
             </div>
             <div className="text-[11px] text-muted-foreground/60 text-center sm:text-right">
-              Crowd-powered street safety · Reports expire after 48h · Community verified
+              Crowd-powered street safety · Reports expire after 30d · Community verified
             </div>
           </div>
         </footer>

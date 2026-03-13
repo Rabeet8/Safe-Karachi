@@ -4,9 +4,11 @@ import type { AreaRisk } from '@/types/crime';
 
 interface AreaRiskPanelProps {
   risks: AreaRisk[];
+  selectedAreaName?: string | null;
+  onAreaSelect?: (area: AreaRisk) => void;
 }
 
-export function AreaRiskPanel({ risks }: AreaRiskPanelProps) {
+export function AreaRiskPanel({ risks, selectedAreaName, onAreaSelect }: AreaRiskPanelProps) {
   const riskStyles = {
     HIGH: { card: 'border-danger/25 bg-danger/5', badge: 'bg-danger/15 text-danger', bar: 'bg-danger' },
     MEDIUM: { card: 'border-warning/25 bg-warning/5', badge: 'bg-warning/15 text-warning', bar: 'bg-warning' },
@@ -30,7 +32,9 @@ export function AreaRiskPanel({ risks }: AreaRiskPanelProps) {
             initial={{ opacity: 0, x: 10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.04 }}
-            className={`border rounded-lg p-4 ${style.card} transition-all duration-200`}
+            onClick={() => onAreaSelect?.(area)}
+            className={`border rounded-lg p-4 ${style.card} transition-all duration-200 cursor-pointer ${selectedAreaName === area.name ? 'ring-2 ring-primary border-primary' : ''
+              }`}
           >
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-sm font-semibold text-foreground">{area.name}</span>

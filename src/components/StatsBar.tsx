@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle, MapPin, Shield, Clock } from 'lucide-react';
+import { AlertTriangle, MapPin, Clock } from 'lucide-react';
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -40,13 +40,12 @@ function StatCard({ icon, value, label, variant = 'info' }: StatCardProps) {
 interface StatsBarProps {
   totalReports: number;
   hotspots: number;
-  verifiedRate: number;
   loading: boolean;
 }
 
-export function StatsBar({ totalReports, hotspots, verifiedRate, loading }: StatsBarProps) {
+export function StatsBar({ totalReports, hotspots, loading }: StatsBarProps) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
       <StatCard
         icon={<AlertTriangle size={20} />}
         value={loading ? '—' : totalReports}
@@ -60,14 +59,8 @@ export function StatsBar({ totalReports, hotspots, verifiedRate, loading }: Stat
         variant="warning"
       />
       <StatCard
-        icon={<Shield size={20} />}
-        value={loading ? '—' : `${verifiedRate}%`}
-        label="Verified Rate"
-        variant="safe"
-      />
-      <StatCard
         icon={<Clock size={20} />}
-        value="48h"
+        value="30d"
         label="Report Expiry"
         variant="info"
       />
