@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, AlertTriangle, MapPin, LogIn, LogOut, Menu, X, BarChart3, History } from 'lucide-react';
+import { Shield, AlertTriangle, MapPin, LogIn, LogOut, Menu, X, BarChart3, History, Maximize2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { StatsBar } from '@/components/StatsBar';
@@ -13,6 +13,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { computeAreaRisks } from '@/lib/riskEngine';
 import { HistoricalTable } from '@/components/HistoricalTable';
 import { ReplayTimeline } from '@/components/ReplayTimeline';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { TimeFilter, AreaRisk, Report } from '@/types/crime';
 
 type Tab = 'reports' | 'areas';
@@ -25,6 +31,7 @@ const Index = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [selectedArea, setSelectedArea] = useState<AreaRisk | null>(null);
+  const [isMapFullscreen, setIsMapFullscreen] = useState(false);
 
   const { data: reports = [], isLoading } = useReports(timeFilter);
   const { data: allReports = [] } = useAllReports();
@@ -78,9 +85,9 @@ const Index = () => {
                 Analytics
               </Button>
             </Link>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setReplayOpen(!replayOpen)}
               className={`gap-1.5 font-mono text-xs transition-colors ${replayOpen ? 'text-danger bg-danger/10' : 'text-muted-foreground hover:text-foreground'}`}
             >
@@ -93,8 +100,8 @@ const Index = () => {
                   key={f}
                   onClick={() => setTimeFilter(f)}
                   className={`px-3.5 py-1.5 text-xs font-mono rounded-md transition-all duration-200 ${timeFilter === f
-                      ? 'bg-card text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
                   {f}
@@ -165,21 +172,21 @@ const Index = () => {
                 </Button>
               </Link>
               <div className="flex items-center gap-2">
-              <Button onClick={() => { setReportOpen(true); setMobileMenuOpen(false); }} size="sm" className="bg-danger hover:bg-danger/90 text-danger-foreground font-mono text-xs rounded-lg">
-                <AlertTriangle size={13} className="mr-1.5" /> Report
-              </Button>
-              {user ? (
-                <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground">
-                  <LogOut size={14} className="mr-1.5" /> Sign Out
+                <Button onClick={() => { setReportOpen(true); setMobileMenuOpen(false); }} size="sm" className="bg-danger hover:bg-danger/90 text-danger-foreground font-mono text-xs rounded-lg">
+                  <AlertTriangle size={13} className="mr-1.5" /> Report
                 </Button>
-              ) : (
-                <Link to="/auth">
-                  <Button variant="ghost" size="sm" className="text-muted-foreground font-mono text-xs">
-                    <LogIn size={14} className="mr-1.5" /> Login
+                {user ? (
+                  <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground">
+                    <LogOut size={14} className="mr-1.5" /> Sign Out
                   </Button>
-                </Link>
-              )}
-            </div>
+                ) : (
+                  <Link to="/auth">
+                    <Button variant="ghost" size="sm" className="text-muted-foreground font-mono text-xs">
+                      <LogIn size={14} className="mr-1.5" /> Login
+                    </Button>
+                  </Link>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
@@ -194,36 +201,82 @@ const Index = () => {
         />
 
         {/* Map + Sidebar */}
-        <div className="grid lg:grid-cols-[1fr_380px] gap-5">
+        <div className="grid lg:grid-cols-[1fr_380px] gap-6">
           {/* Map section */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse-danger" />
-                <h2 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                  Live Crime Map
+                <h2 className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                  Operational_Tactical_Map
                 </h2>
               </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMapFullscreen(true)}
+                className="h-7 px-2 font-mono text-[10px] gap-1.5 bg-secondary/50 hover:bg-secondary border border-border/50"
+              >
+                <Maximize2 size={12} />
+                FULLSCREEN
+              </Button>
             </div>
-            <div className="h-[480px] lg:h-[580px] relative z-0">
-              <CrimeMap 
-                reports={replayOpen ? replayReports : reports} 
+
+
+            <div className="h-[400px] md:h-[500px] lg:h-[620px] relative z-0 rounded-2xl overflow-hidden border border-border/50 shadow-2xl">
+              <CrimeMap
+                reports={replayOpen ? replayReports : reports}
                 areaRisks={areaRisks}
                 selectedReportId={selectedReportId}
                 selectedArea={selectedArea}
                 replayActive={replayOpen}
                 newestReportId={newestReportId}
               />
-              <AnimatePresence>
-                {replayOpen && (
-                  <ReplayTimeline 
-                    reports={reports} 
-                    onTimeUpdate={handleTimelineUpdate} 
-                    onClose={() => setReplayOpen(false)}
-                  />
-                )}
-              </AnimatePresence>
             </div>
+            
+            <AnimatePresence>
+              {replayOpen && (
+                <ReplayTimeline
+                  reports={reports}
+                  onTimeUpdate={handleTimelineUpdate}
+                  onClose={() => setReplayOpen(false)}
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Map Fullscreen Dialog */}
+            <Dialog open={isMapFullscreen} onOpenChange={setIsMapFullscreen}>
+              <DialogContent className="max-w-[98vw] w-[98vw] h-[98vh] p-0 overflow-hidden border-border/20 bg-background flex flex-col">
+                <DialogHeader className="p-4 border-b border-border/50 bg-black/40 backdrop-blur-md shrink-0">
+                  <div className="flex items-center justify-between w-full">
+                    <DialogTitle className="font-mono text-xs uppercase tracking-[0.2em] flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-danger animate-pulse" />
+                      Tactical_Navigation_Interface
+                    </DialogTitle>
+                    <div className="text-[10px] font-mono text-muted-foreground mr-8 hidden sm:block">
+                      COORD_MODE: ACTIVE · ZOOM_SCALE: REALTIME
+                    </div>
+                  </div>
+                </DialogHeader>
+                <div className="flex-1 relative w-full overflow-hidden">
+                  <CrimeMap
+                    reports={replayOpen ? replayReports : reports}
+                    areaRisks={areaRisks}
+                    selectedReportId={selectedReportId}
+                    selectedArea={selectedArea}
+                    replayActive={replayOpen}
+                    newestReportId={newestReportId}
+                  />
+                  {replayOpen && (
+                    <ReplayTimeline
+                      reports={reports}
+                      onTimeUpdate={handleTimelineUpdate}
+                      onClose={() => setReplayOpen(false)}
+                    />
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Sidebar */}
@@ -246,8 +299,8 @@ const Index = () => {
             </div>
             <div className="max-h-[540px] overflow-y-auto pr-0.5">
               {activeTab === 'reports' ? (
-                <RecentReports 
-                  reports={replayOpen ? [...replayReports].reverse() : reports} 
+                <RecentReports
+                  reports={replayOpen ? [...replayReports].reverse() : reports}
                   selectedId={selectedReportId}
                   onReportSelect={(id) => {
                     setSelectedReportId(id);
@@ -255,8 +308,8 @@ const Index = () => {
                   }}
                 />
               ) : (
-                <AreaRiskPanel 
-                  risks={areaRisks} 
+                <AreaRiskPanel
+                  risks={areaRisks}
                   selectedAreaName={selectedArea?.name || null}
                   onAreaSelect={(area) => {
                     setSelectedArea(area);

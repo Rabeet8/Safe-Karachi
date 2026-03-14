@@ -1,14 +1,14 @@
 
 import { useState, ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Shield, 
-  BarChart3, 
-  TrendingUp, 
-  Clock, 
-  MapPin, 
-  Filter, 
-  Download, 
+import {
+  Shield,
+  BarChart3,
+  TrendingUp,
+  Clock,
+  MapPin,
+  Filter,
+  Download,
   ChevronLeft,
   Loader2,
   PieChart as PieChartIcon
@@ -17,8 +17,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { INCIDENT_CONFIG, type TimeFilter, type IncidentType } from '@/types/crime';
-import { 
-  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, 
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from 'recharts';
 
@@ -57,12 +57,12 @@ export default function Analytics() {
               <h1 className="font-mono text-sm font-bold tracking-wider uppercase">Crime_Analytics</h1>
             </div>
           </div>
-          
-          <div className="flex items-center gap-4">
+
+          {/* <div className="flex items-center gap-4">
              <Button variant="outline" size="sm" className="hidden md:flex gap-2 font-mono text-[10px] uppercase h-9 border-border bg-secondary/30">
                <Download size={14} /> Export_CSV
              </Button>
-          </div>
+          </div> */}
         </div>
       </header>
 
@@ -85,25 +85,25 @@ export default function Analytics() {
           </div>
 
           <div className="w-full md:w-64">
-             <select 
-               value={crimeType}
-               onChange={(e) => setCrimeType(e.target.value as any)}
-               className="w-full bg-secondary/50 border border-border rounded-lg px-4 py-2 text-xs font-mono focus:outline-none focus:border-danger/50"
-             >
-               <option value="all">ALL_INCIDENT_TYPES</option>
-               {Object.entries(INCIDENT_CONFIG).map(([key, config]) => (
-                 <option key={key} value={key}>{config.label.toUpperCase()}</option>
-               ))}
-             </select>
+            <select
+              value={crimeType}
+              onChange={(e) => setCrimeType(e.target.value as any)}
+              className="w-full bg-secondary/50 border border-border rounded-lg px-4 py-2 text-xs font-mono focus:outline-none focus:border-danger/50"
+            >
+              <option value="all">ALL_INCIDENT_TYPES</option>
+              {Object.entries(INCIDENT_CONFIG).map(([key, config]) => (
+                <option key={key} value={key}>{config.label.toUpperCase()}</option>
+              ))}
+            </select>
           </div>
         </section>
 
         {/* SECTION 1: Summary Metrics */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard title="Total Reports" value={data?.totalReports || 0} icon={<TrendingUp size={20}/>} color="text-info" />
-          <MetricCard title="Most Common" value={data?.mostCommonCrime || 'N/A'} icon={<Shield size={20}/>} color="text-danger" />
-          <MetricCard title="Peak Time" value={data?.peakCrimeTime || 'N/A'} icon={<Clock size={20}/>} color="text-warning" />
-          <MetricCard title="Top Area" value={data?.topArea || 'N/A'} icon={<MapPin size={20}/>} color="text-safe" />
+          <MetricCard title="Total Reports" value={data?.totalReports || 0} icon={<TrendingUp size={20} />} color="text-info" />
+          <MetricCard title="Most Common" value={data?.mostCommonCrime || 'N/A'} icon={<Shield size={20} />} color="text-danger" />
+          <MetricCard title="Peak Time" value={data?.peakCrimeTime || 'N/A'} icon={<Clock size={20} />} color="text-warning" />
+          <MetricCard title="Top Area" value={data?.topArea || 'N/A'} icon={<MapPin size={20} />} color="text-safe" />
         </section>
 
         <div className="grid lg:grid-cols-2 gap-8">
@@ -114,7 +114,7 @@ export default function Analytics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
                 <XAxis dataKey="date" stroke="#666" fontSize={10} tickFormatter={(val) => val.split('-').slice(1).join('/')} />
                 <YAxis stroke="#666" fontSize={10} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', fontSize: '12px' }}
                   itemStyle={{ color: '#e63946' }}
                 />
@@ -177,7 +177,7 @@ export default function Analytics() {
 
 function MetricCard({ title, value, icon, color }: { title: string, value: string | number, icon: ReactNode, color: string }) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="bg-card/40 border border-border p-6 rounded-2xl backdrop-blur-sm space-y-3"
@@ -193,7 +193,7 @@ function MetricCard({ title, value, icon, color }: { title: string, value: strin
 
 function ChartContainer({ title, children }: { title: string, children: ReactNode }) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       className="bg-card/20 border border-border p-6 rounded-2xl backdrop-blur-sm space-y-6"

@@ -33,8 +33,11 @@ export function AreaRiskPanel({ risks, selectedAreaName, onAreaSelect }: AreaRis
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.04 }}
             onClick={() => onAreaSelect?.(area)}
-            className={`border rounded-lg p-4 ${style.card} transition-all duration-200 cursor-pointer ${selectedAreaName === area.name ? 'ring-2 ring-primary border-primary' : ''
-              }`}
+            className={`border rounded-lg p-4 ${style.card} transition-all duration-300 cursor-pointer ${
+              selectedAreaName === area.name 
+                ? '!border-white ring-1 ring-white/50 scale-[1.02] z-10 shadow-xl' 
+                : 'hover:border-white/20'
+            }`}
           >
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-sm font-semibold text-foreground">{area.name}</span>

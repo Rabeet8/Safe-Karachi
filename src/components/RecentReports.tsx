@@ -97,7 +97,7 @@ export function RecentReports({ reports, selectedId, onReportSelect }: RecentRep
             </div>
           )}
           {user && (
-            <div className="flex items-center gap-3 mt-3 pl-11 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div className="flex items-center gap-3 mt-3 pl-11 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
               <button
                 onClick={() => handleVote(report.id, 'confirm')}
                 disabled={vote.isPending}

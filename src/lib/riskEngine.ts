@@ -24,33 +24,76 @@ function getDistance(lat1: number, lng1: number, lat2: number, lng2: number): nu
 }
 
 export function computeAreaRisks(reports: Report[]): AreaRisk[] {
+  const areaStats = new Map<string, {
+    recentReports: number;
+    confirmedReports: number;
+    historicalReports: number;
+    hourCounts: number[];
+  }>();
+
+  // Initialize stats for all areas
+  KARACHI_AREAS.forEach(area => {
+    areaStats.set(area.name, {
+      recentReports: 0,
+      confirmedReports: 0,
+      historicalReports: 0,
+      hourCounts: new Array(24).fill(0),
+    });
+  });
+
+  // Severity weights for different incident types
+  const SEVERITY_WEIGHTS: Record<string, number> = {
+    carjacking: 4,
+    assault: 4,
+    robbery: 3,
+    mobile_snatching: 3,
+    vehicle_theft: 2,
+    street_harassment: 2,
+    theft: 1,
+    other: 1
+  };
+
   const now = Date.now();
-  
+
+  // Assign each report to exactly ONE nearest area
+  reports.forEach(r => {
+    const nearestAreaName = getNearestArea(r.latitude, r.longitude);
+    const stats = areaStats.get(nearestAreaName);
+    
+    if (stats) {
+      const weight = SEVERITY_WEIGHTS[r.incident_type] || 1;
+      stats.historicalReports += weight; // Weighted count
+      
+      const reportTime = new Date(r.created_at).getTime();
+      if (now - reportTime < 24 * 60 * 60 * 1000) {
+        stats.recentReports += weight; // Weighted recent impact
+      }
+      
+      if (r.status === 'verified') {
+        stats.confirmedReports += weight; // Verified threats carry more weight
+      }
+      
+      const hour = new Date(r.created_at).getHours();
+      stats.hourCounts[hour]++;
+    }
+  });
+
   return KARACHI_AREAS.map(area => {
-    const nearbyReports = reports.filter(r => getDistance(r.latitude, r.longitude, area.lat, area.lng) < 0.015);
+    const stats = areaStats.get(area.name)!;
     
-    const recentReports = nearbyReports.filter(r => now - new Date(r.created_at).getTime() < 24 * 60 * 60 * 1000).length;
-    const confirmedReports = nearbyReports.filter(r => r.status === 'verified').length;
-    const historicalReports = nearbyReports.length;
-    
-    const score = Math.round(
-      recentReports * 0.6 * 10 +
-      confirmedReports * 0.3 * 10 +
-      historicalReports * 0.1 * 5
+    // Calculate nuanced risk score
+    // Max theoretical score could be high, so we normalize
+    const rawScore = (
+      stats.recentReports * 1.5 +    // Active threats are most critical
+      stats.confirmedReports * 1.0 + // Verified status adds confidence
+      stats.historicalReports * 0.2  // Long-term history adds baseline risk
     );
 
-    const clampedScore = Math.min(score, 100);
+    const clampedScore = Math.min(Math.round(rawScore), 100);
     const riskLevel: AreaRisk['riskLevel'] = clampedScore >= 50 ? 'HIGH' : clampedScore >= 25 ? 'MEDIUM' : 'LOW';
-    const finalScore = clampedScore;
 
-    // Determine peak time from reports
-    const hourCounts = new Array(24).fill(0);
-    nearbyReports.forEach(r => {
-      const hour = new Date(r.created_at).getHours();
-      hourCounts[hour]++;
-    });
-    const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
-    const peakTime = historicalReports > 0 
+    const peakHour = stats.hourCounts.indexOf(Math.max(...stats.hourCounts));
+    const peakTime = stats.historicalReports > 0 
       ? `${peakHour % 12 || 12}–${(peakHour + 3) % 12 || 12} ${peakHour >= 12 ? 'PM' : 'AM'}`
       : 'N/A';
 
@@ -59,10 +102,10 @@ export function computeAreaRisks(reports: Report[]): AreaRisk[] {
       lat: area.lat,
       lng: area.lng,
       riskLevel,
-      score: finalScore,
-      recentReports,
-      confirmedReports,
-      historicalReports,
+      score: clampedScore,
+      recentReports: stats.recentReports,
+      confirmedReports: stats.confirmedReports,
+      historicalReports: stats.historicalReports,
       peakTime,
     };
   }).sort((a, b) => b.score - a.score);

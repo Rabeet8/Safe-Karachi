@@ -19,7 +19,7 @@ const AdminPanel = () => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'verified'>('all');
 
   // RESTRICT ACCESS TO ONE SPECIFIC EMAIL
-  const ADMIN_EMAIL = "syedrabeet2002@gmail.com"; 
+  const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL; 
   const isAdmin = user?.email === ADMIN_EMAIL;
 
   if (authLoading) return (

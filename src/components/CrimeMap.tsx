@@ -214,13 +214,6 @@ export function CrimeMap({ reports, areaRisks = [], selectedReportId, selectedAr
         >
           <Home size={18} />
         </button>
-        <button
-          onClick={toggleFullscreen}
-          className="p-2.5 bg-card/95 backdrop-blur-md border border-border rounded-lg shadow-lg hover:bg-secondary transition-colors text-foreground"
-          title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
-        >
-          {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
-        </button>
       </div>
 
       <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-md border border-border rounded-lg p-3 z-10 shadow-lg">
