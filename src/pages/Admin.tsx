@@ -9,34 +9,72 @@ import { formatDistanceToNow } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AdminPanel = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const { data: reports = [] } = useReports('30d');
   const { data: profiles = [], isLoading: profilesLoading } = useProfiles();
   const updateStatus = useUpdateReportStatus();
   const deleteProfile = useDeleteProfile();
-  
+
   const [activeTab, setActiveTab] = useState<'reports' | 'users'>('reports');
   const [filter, setFilter] = useState<'all' | 'pending' | 'verified'>('all');
 
   // RESTRICT ACCESS TO ONE SPECIFIC EMAIL
-  const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL; 
-  const isAdmin = user?.email === ADMIN_EMAIL;
+  const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase();
+  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL && !!ADMIN_EMAIL;
 
   if (authLoading) return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center font-mono gap-4">
       <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      <span className="animate-pulse">VERIFYING_CREDENTIALS...</span>
+      <span className="animate-pulse tracking-widest text-xs uppercase opacity-50">VERIFYING_CREDENTIALS...</span>
     </div>
   );
-  
-  if (!isAdmin) {
+
+  if (!user || !isAdmin) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-card border border-border p-8 rounded-xl text-center shadow-2xl">
-          <ShieldAlert size={48} className="mx-auto text-danger mb-4" />
-          <h1 className="text-xl font-bold mb-2">ACCESS_DENIED</h1>
-          <p className="text-muted-foreground text-sm mb-6">Unauthorized terminal access detected. Administrative privileges are required.</p>
-          <Button variant="outline" className="font-mono text-xs" onClick={() => window.location.href = '/'}>RETURN_TO_BASE</Button>
+      <div className="min-h-screen bg-background flex items-center justify-center p-6 noise-bg">
+        <div className="max-w-md w-full bg-card/50 backdrop-blur-xl border border-border p-8 rounded-2xl text-center shadow-2xl relative overflow-hidden group">
+          <div className="absolute inset-0 bg-danger/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <ShieldAlert size={56} className="mx-auto text-danger mb-6 animate-pulse-danger" />
+          <h1 className="text-2xl font-black mb-2 tracking-tighter uppercase italic text-foreground">ACCESS_DENIED</h1>
+
+          <div className="bg-secondary/40 rounded-xl p-4 mb-8 border border-border/50">
+            <p className="text-muted-foreground text-[10px] mb-3 uppercase tracking-[0.2em] leading-relaxed opacity-70 font-mono">
+              {!ADMIN_EMAIL 
+                ? "CONFIGURATION_ERROR: ADMIN_EMAIL_NOT_SET"
+                : user
+                  ? "SECURITY_BREACH: UNAUTHORIZED_PERSONNEL_DETECTED"
+                  : "PROTOCOL_REQUIRED: AUTHENTICATION_SEQUENCE_INCOMPLETE"}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            {!user ? (
+              <Button
+                variant="destructive"
+                className="font-mono text-[10px] tracking-widest h-11 shadow-lg shadow-danger/20 rounded-xl"
+                onClick={() => window.location.href = '/auth'}
+              >
+                AUTHORIZE_LOGIN
+              </Button>
+            ) : (
+              <>
+                <Button
+                  variant="destructive"
+                  className="font-mono text-[10px] tracking-widest h-11 rounded-xl"
+                  onClick={() => signOut()}
+                >
+                  TERMINATE_SESSION_&_RETRY
+                </Button>
+                <Button
+                  variant="outline"
+                  className="font-mono text-[10px] tracking-widest h-11 border-border/50 hover:bg-secondary rounded-xl"
+                  onClick={() => window.location.href = '/'}
+                >
+                  RETURN_TO_BASE
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -71,21 +109,19 @@ const AdminPanel = () => {
               System Administrator: {user?.email}
             </p>
           </div>
-          
+
           <div className="flex bg-secondary/80 rounded-xl p-1.5 border border-border/50">
             <button
               onClick={() => setActiveTab('reports')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-mono rounded-lg transition-all ${
-                activeTab === 'reports' ? 'bg-card text-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-mono rounded-lg transition-all ${activeTab === 'reports' ? 'bg-card text-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
+                }`}
             >
               <FileText size={14} /> REPORTS
             </button>
             <button
               onClick={() => setActiveTab('users')}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-mono rounded-lg transition-all ${
-                activeTab === 'users' ? 'bg-card text-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-mono rounded-lg transition-all ${activeTab === 'users' ? 'bg-card text-foreground shadow-lg' : 'text-muted-foreground hover:text-foreground'
+                }`}
             >
               <Users size={14} /> USERS
             </button>
@@ -108,9 +144,8 @@ const AdminPanel = () => {
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
-                      className={`px-3 py-1 text-[10px] font-mono rounded-md transition-all ${
-                        filter === f ? 'bg-card text-foreground' : 'text-muted-foreground'
-                      }`}
+                      className={`px-3 py-1 text-[10px] font-mono rounded-md transition-all ${filter === f ? 'bg-card text-foreground' : 'text-muted-foreground'
+                        }`}
                     >
                       {f.toUpperCase()}
                     </button>
@@ -131,56 +166,55 @@ const AdminPanel = () => {
                       <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-xl flex-shrink-0 border border-border/50 shadow-inner">
                         {INCIDENT_CONFIG[report.incident_type].icon}
                       </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-semibold text-sm">
-                          {INCIDENT_CONFIG[(report as any).incident_type].label}
-                        </span>
-                        <span className={`text-[9px] px-2 py-0.5 rounded-md font-mono font-bold uppercase ${
-                          (report as any).status === 'verified' ? 'bg-safe/10 text-safe' : 'bg-warning/10 text-warning'
-                        }`}>
-                          {(report as any).status}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-1 mb-2 max-w-xl">{(report as any).description || 'N_A'}</p>
-                      <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground/40 font-mono">
-                        <span className="flex items-center gap-1"><Clock size={10}/> {formatDistanceToNow(new Date((report as any).created_at), { addSuffix: true })}</span>
-                        <span>📍 {(report as any).location_name || 'UNK_LOC'}</span>
-                        <span className="text-info/60 flex items-center gap-1 bg-info/5 px-2 py-0.5 rounded border border-info/10">
-                          👤 POSTED_BY: <span className="text-foreground">
-                            {profiles.find(p => p.user_id === (report as any).user_id)?.display_name || (report as any).user_id.slice(0, 8)}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-semibold text-sm">
+                            {INCIDENT_CONFIG[(report as any).incident_type].label}
                           </span>
-                        </span>
-                      </div>
-                    </div>
-                    {(report as any).image_url && (
-                      <a 
-                        href={(report as any).image_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex-shrink-0"
-                      >
-                        <div className="w-16 h-16 rounded-xl border border-border overflow-hidden bg-secondary shadow-sm hover:border-danger/30 transition-colors">
-                          <img src={(report as any).image_url} alt="Evidence" className="w-full h-full object-cover" />
+                          <span className={`text-[9px] px-2 py-0.5 rounded-md font-mono font-bold uppercase ${(report as any).status === 'verified' ? 'bg-safe/10 text-safe' : 'bg-warning/10 text-warning'
+                            }`}>
+                            {(report as any).status}
+                          </span>
                         </div>
-                      </a>
-                    )}
+                        <p className="text-xs text-muted-foreground line-clamp-1 mb-2 max-w-xl">{(report as any).description || 'N_A'}</p>
+                        <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground/40 font-mono">
+                          <span className="flex items-center gap-1"><Clock size={10} /> {formatDistanceToNow(new Date((report as any).created_at), { addSuffix: true })}</span>
+                          <span>📍 {(report as any).location_name || 'UNK_LOC'}</span>
+                          <span className="text-info/60 flex items-center gap-1 bg-info/5 px-2 py-0.5 rounded border border-info/10">
+                            👤 POSTED_BY: <span className="text-foreground">
+                              {profiles.find(p => p.user_id === (report as any).user_id)?.display_name || (report as any).user_id.slice(0, 8)}
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                      {(report as any).image_url && (
+                        <a
+                          href={(report as any).image_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-shrink-0"
+                        >
+                          <div className="w-16 h-16 rounded-xl border border-border overflow-hidden bg-secondary shadow-sm hover:border-danger/30 transition-colors">
+                            <img src={(report as any).image_url} alt="Evidence" className="w-full h-full object-cover" />
+                          </div>
+                        </a>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2 w-full md:w-auto">
                       {report.status !== 'verified' && (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="flex-1 md:flex-none h-8 text-[10px] font-mono text-safe hover:bg-safe/10 gap-1.5 border border-safe/20"
                           onClick={() => handleReportAction(report.id, 'verified')}
                         >
                           <CheckCircle size={12} /> VERIFY
                         </Button>
                       )}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="flex-1 md:flex-none h-8 text-[10px] font-mono text-danger hover:bg-danger/10 gap-1.5 border border-danger/20"
                         onClick={() => handleReportAction(report.id, 'hidden')}
                       >
@@ -205,7 +239,7 @@ const AdminPanel = () => {
               className="space-y-6"
             >
               <h2 className="text-sm font-mono font-bold text-muted-foreground tracking-widest uppercase">User_Registry</h2>
-              
+
               <div className="grid gap-3">
                 {profiles.map((profile, i) => (
                   <motion.div
@@ -235,9 +269,9 @@ const AdminPanel = () => {
                     </div>
 
                     <div className="flex items-center gap-2 w-full md:w-auto">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="flex-1 md:flex-none h-9 text-[10px] font-mono text-danger hover:bg-danger/10 gap-2 border border-danger/20"
                         onClick={() => handleDeleteUser(profile.id)}
                         disabled={deleteProfile.isPending}

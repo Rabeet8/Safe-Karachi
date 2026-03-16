@@ -126,6 +126,14 @@ const Index = () => {
                 <span className="hidden lg:inline text-xs text-muted-foreground font-mono">
                   {profile?.display_name || user.email?.split('@')[0]}
                 </span>
+                {user.email?.toLowerCase() === import.meta.env.VITE_ADMIN_EMAIL?.toLowerCase() && (
+                  <Link to="/admin">
+                    <Button variant="ghost" size="sm" className="h-7 px-2 font-mono text-[10px] gap-1.5 text-danger hover:bg-danger/10 border border-danger/20">
+                      <Shield size={12} />
+                      ADMIN
+                    </Button>
+                  </Link>
+                )}
                 <Button variant="ghost" size="sm" onClick={signOut} className="text-muted-foreground hover:text-foreground h-7 w-7 p-0">
                   <LogOut size={14} />
                 </Button>
